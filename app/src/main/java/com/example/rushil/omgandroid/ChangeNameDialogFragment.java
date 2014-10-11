@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,17 +35,21 @@ public class ChangeNameDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState){
         final SharedPreferences mSharedPreferences = getActivity().getSharedPreferences(MainActivity.PREFS, MainActivity.MODE_PRIVATE);
         AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
+        LayoutInflater inflater = getActivity().getLayoutInflater();
+        View view = inflater.inflate(R.layout.dialog_layout,null);
+        alert.setView(view);
         alert.setTitle("Hello!");
         alert.setMessage("What is your name?");
 
-        final EditText input = new EditText(getActivity());
-        alert.setView(input);
+        final EditText input = (EditText)view.findViewById(R.id.name_edittext);
+        //alert.setView(input);
 
         alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int whichButton) {
-                String inputName = input.getText().toString();
 
+                String inputName = input.getText().toString();
+                Log.d("input debug","this is the input" + inputName);
                 SharedPreferences.Editor e = mSharedPreferences.edit();
                 e.putString(MainActivity.PREF_NAME, inputName);
                 e.commit();
