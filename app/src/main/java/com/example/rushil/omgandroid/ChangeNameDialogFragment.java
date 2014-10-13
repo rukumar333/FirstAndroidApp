@@ -2,6 +2,7 @@ package com.example.rushil.omgandroid;
 
 
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -10,6 +11,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,8 +28,26 @@ public class ChangeNameDialogFragment extends DialogFragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+    EnterKeyListener mListener;
+
+    public interface EnterKeyListener{
+        public void closeDialog();
+    }
 
     public ChangeNameDialogFragment(){
+
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+
+        try {
+            mListener = (EnterKeyListener) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString()
+                    + " must implement OnWordSelectedListener");
+        }
 
     }
 
@@ -42,7 +62,23 @@ public class ChangeNameDialogFragment extends DialogFragment {
         alert.setMessage("What is your name?");
 
         final EditText input = (EditText)view.findViewById(R.id.name_edittext);
-        //alert.setView(input);
+        input.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                Log.d("","We are in the keylistner");
+                if((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)){
+                    Log.d("","We are in the keylistner if statement");
+                    String inputName = input.getText().toString();
+                    SharedPreferences.Editor e = mSharedPreferences.edit();
+                    e.putString(MainActivity.PREF_NAME, inputName);
+                    e.commit();
+                    mListener.closeDialog();
+                    Toast.makeText(getActivity().getApplicationContext(), "Welcome back, " + inputName + "!", Toast.LENGTH_LONG).show();
+                    return true;
+                }
+                return false;
+            }
+        });
 
         alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override

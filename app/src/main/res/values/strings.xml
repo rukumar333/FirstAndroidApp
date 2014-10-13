@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">"OMG Android "</string>
-    <string name="textview">Rushil is learning Android!</string>
+    <string name="app_name">Bookmaster General</string>
+    <string name="textview">Search for books!</string>
     <string name="action_settings">Settings</string>
-    <string name="mainbutton">Update the TextView</string>
-    <string name="hint">A Name</string>
+    <string name="mainbutton">Search</string>
+    <string name="hint">Title and/or Author</string>
     <string name="namebutton">Change Name</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

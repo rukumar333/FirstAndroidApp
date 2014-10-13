@@ -6,8 +6,10 @@ import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,13 +22,15 @@ import android.widget.ShareActionProvider;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Objects;
 
 
-    public class MainActivity extends Activity implements View.OnClickListener, AdapterView.OnItemClickListener {
+    public class MainActivity extends Activity implements View.OnClickListener, AdapterView.OnItemClickListener, ChangeNameDialogFragment.EnterKeyListener {
 
         Button mainButton;
-        Button nameButton;
+        //Button nameButton;
         TextView mainTextView;
         EditText mainEditText;
         ListView mainListView;
@@ -34,9 +38,11 @@ import java.util.ArrayList;
         ArrayList mNameList = new ArrayList();
         ShareActionProvider mShareActionProdiver;
         DialogFragment ChangeNameDialogFragment;
+        ChangeNameDialogFragment dialog;
 
         protected static final String PREFS = "prefs";
         protected static final String PREF_NAME = "name";
+        private static final String NAMES = "com.example.omgandroid.MainActivity.mNameList";
         SharedPreferences mSharedPreferences;
 
         @Override
@@ -44,19 +50,37 @@ import java.util.ArrayList;
             super.onCreate(savedInstanceState);
             setContentView(R.layout.activity_main);
             mainTextView = (TextView) findViewById(R.id.main_textview);
-            mainTextView.setText("Set in java!");
             mainButton = (Button) findViewById(R.id.main_button);
             mainButton.setOnClickListener(this);
-            nameButton = (Button) findViewById(R.id.name_button);
-            nameButton.setOnClickListener(this);
+            //nameButton = (Button) findViewById(R.id.name_button);
+            //nameButton.setOnClickListener(this);
 
             mainEditText = (EditText) findViewById(R.id.main_edittext);
-            //set onkeylistener
+            mainEditText.setOnKeyListener(new View.OnKeyListener() {
+                @Override
+                public boolean onKey(View v, int keyCode, KeyEvent event) {
+                    if((keyCode == KeyEvent.KEYCODE_ENTER) && (event.getAction() == KeyEvent.ACTION_DOWN)){
+                        String name = mainEditText.getText().toString();
+                        mainTextView.setText(name + " is learning Android development!");
+                        mainEditText.setText("");
+                        mNameList.add(name);
+                        mArrayAdapter.notifyDataSetChanged();
+                        setShareIntent();
+                        return true;
+                    }
+                    return false;
+                }
+            });
             mainListView = (ListView) findViewById(R.id.main_listview);
+            if(savedInstanceState != null){
+                Log.d("debug", "saved instance state was not null");
+                mNameList = savedInstanceState.getStringArrayList(NAMES);
+            }else{
+                displayWelcome();
+            }
             mArrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, mNameList);
             mainListView.setAdapter(mArrayAdapter);
             mainListView.setOnItemClickListener(this);
-            displayWelcome();
         }
 
 
@@ -70,6 +94,15 @@ import java.util.ArrayList;
             }
             setShareIntent();
             return true;
+        }
+
+        @Override
+        protected void onSaveInstanceState(Bundle outState){
+            ArrayList<String> names = new ArrayList<String>();
+            for(int i = 0; i < mArrayAdapter.getCount(); i ++){
+                names.add((String) mArrayAdapter.getItem(i));
+            }
+            outState.putStringArrayList(NAMES,names);
         }
 
         private void setShareIntent() {
@@ -93,8 +126,10 @@ import java.util.ArrayList;
                     mArrayAdapter.notifyDataSetChanged();
                     setShareIntent();
                     break;
+                /*
                 case R.id.name_button:
                     changeWelcomeName();
+                    */
             }
         }
 
@@ -115,37 +150,11 @@ import java.util.ArrayList;
         }
 
         public void changeWelcomeName(){
-            /*
-            mSharedPreferences = getSharedPreferences(PREFS, MODE_PRIVATE);
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
-            alert.setTitle("Hello!");
-            alert.setMessage("What is your name?");
-
-            final EditText input = new EditText(this);
-            alert.setView(input);
-
-            alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int whichButton) {
-                    String inputName = input.getText().toString();
-
-                    SharedPreferences.Editor e = mSharedPreferences.edit();
-                    e.putString(PREF_NAME, inputName);
-                    e.commit();
-
-                    Toast.makeText(getApplicationContext(), "Welcome back, " + inputName + "!", Toast.LENGTH_LONG).show();
-                }
-            });
-
-            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-
-                }
-            });
-            alert.show();
-            */
-            ChangeNameDialogFragment dialog = new ChangeNameDialogFragment();
+            dialog = new ChangeNameDialogFragment();
             dialog.show(getFragmentManager(),"fragment_edit_name");
+        }
+
+        public void closeDialog(){
+            dialog.dismiss();
         }
     }
