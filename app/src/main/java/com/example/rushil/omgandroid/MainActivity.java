@@ -3,6 +3,7 @@
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DialogFragment;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,6 +14,9 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -22,7 +26,14 @@ import android.widget.ShareActionProvider;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
+
+import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -34,7 +45,7 @@ import java.util.Objects;
         TextView mainTextView;
         EditText mainEditText;
         ListView mainListView;
-        ArrayAdapter mArrayAdapter;
+        JSONAdapter mJSONAdapter;
         ArrayList mNameList = new ArrayList();
         ShareActionProvider mShareActionProdiver;
         DialogFragment ChangeNameDialogFragment;
@@ -43,11 +54,14 @@ import java.util.Objects;
         protected static final String PREFS = "prefs";
         protected static final String PREF_NAME = "name";
         private static final String NAMES = "com.example.omgandroid.MainActivity.mNameList";
+        private static final String QUERY_URL = "http://openlibrary.org/search.json?q=";
         SharedPreferences mSharedPreferences;
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+            setProgressBarIndeterminateVisibility(false);
             setContentView(R.layout.activity_main);
             mainTextView = (TextView) findViewById(R.id.main_textview);
             mainButton = (Button) findViewById(R.id.main_button);
@@ -56,16 +70,14 @@ import java.util.Objects;
             //nameButton.setOnClickListener(this);
 
             mainEditText = (EditText) findViewById(R.id.main_edittext);
-            mainEditText.setOnKeyListener(new View.OnKeyListener() {
+            mainEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
-                public boolean onKey(View v, int keyCode, KeyEvent event) {
-                    if((keyCode == KeyEvent.KEYCODE_ENTER) && (event.getAction() == KeyEvent.ACTION_DOWN)){
-                        String name = mainEditText.getText().toString();
-                        mainTextView.setText(name + " is learning Android development!");
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if(actionId == EditorInfo.IME_ACTION_SEARCH){
+                        queryBooks(mainEditText.getText().toString());
                         mainEditText.setText("");
-                        mNameList.add(name);
-                        mArrayAdapter.notifyDataSetChanged();
-                        setShareIntent();
+                        InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.hideSoftInputFromWindow(mainEditText.getWindowToken(), 0);
                         return true;
                     }
                     return false;
@@ -78,8 +90,8 @@ import java.util.Objects;
             }else{
                 displayWelcome();
             }
-            mArrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, mNameList);
-            mainListView.setAdapter(mArrayAdapter);
+            mJSONAdapter = new JSONAdapter(this,getLayoutInflater());
+            mainListView.setAdapter(mJSONAdapter);
             mainListView.setOnItemClickListener(this);
         }
 
@@ -95,7 +107,7 @@ import java.util.Objects;
             setShareIntent();
             return true;
         }
-
+        /*
         @Override
         protected void onSaveInstanceState(Bundle outState){
             ArrayList<String> names = new ArrayList<String>();
@@ -104,7 +116,7 @@ import java.util.Objects;
             }
             outState.putStringArrayList(NAMES,names);
         }
-
+        */
         private void setShareIntent() {
             if (mShareActionProdiver != null) {
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -118,7 +130,12 @@ import java.util.Objects;
         @Override
         public void onClick(View view) {
             switch(view.getId()) {
+
                 case R.id.main_button:
+                    queryBooks(mainEditText.getText().toString());
+                    mainEditText.setText("");
+                    break;
+                    /*
                     String name = mainEditText.getText().toString();
                     mainTextView.setText(name + " is learning Android development!");
                     mainEditText.setText("");
@@ -126,6 +143,7 @@ import java.util.Objects;
                     mArrayAdapter.notifyDataSetChanged();
                     setShareIntent();
                     break;
+                    */
                 /*
                 case R.id.name_button:
                     changeWelcomeName();
@@ -135,7 +153,7 @@ import java.util.Objects;
 
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-            Log.d("omg android", position + ": " + mNameList.get(position));
+
         }
 
 
@@ -156,5 +174,33 @@ import java.util.Objects;
 
         public void closeDialog(){
             dialog.dismiss();
+        }
+
+        private void queryBooks(String searchString){
+            String urlString = "";
+            try{
+                urlString = URLEncoder.encode(searchString,"UTF-8");
+            }catch(UnsupportedEncodingException e){
+                e.printStackTrace();
+                Toast.makeText(this,"Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+            AsyncHttpClient client = new AsyncHttpClient();
+            setProgressBarIndeterminateVisibility(true);
+            client.get(QUERY_URL + urlString,
+                    new JsonHttpResponseHandler(){
+                        @Override
+                        public void onSuccess(JSONObject jsonObject){
+                            Toast.makeText(getApplicationContext(), "Success!", Toast.LENGTH_LONG).show();
+                            mJSONAdapter.updateData(jsonObject.optJSONArray("docs"));
+                            setProgressBarIndeterminateVisibility(false);
+                        }
+
+                        @Override
+                        public void onFailure(int statusCode, Throwable throwable, JSONObject error){
+                            Toast.makeText(getApplicationContext(), "Error: " + statusCode + " " + throwable.getMessage(), Toast.LENGTH_LONG).show();
+                            setProgressBarIndeterminateVisibility(false);
+                            Log.e("omg android", statusCode + " " + throwable.getMessage());
+                        }
+            });
         }
     }

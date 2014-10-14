@@ -35,7 +35,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:layout_marginLeft="20dp"
-        android:inputType="textCapSentences"
+        android:inputType="textCapWords"
+        android:imeOptions="actionSearch"
         android:hint="@string/hint"/>
     <!--
     <Button
